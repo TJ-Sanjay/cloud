@@ -1,0 +1,48 @@
+EXERCISE 2 — REMOTE METHOD INVOCATION (RMI) WITH PYRO4
+=======================================================
+
+QUESTION
+--------
+Create a Calculator service on a server with remote addition and multiplication methods. Expose it with Pyro4, register it with a Pyro4 daemon, and let a client enter the server URI and invoke both methods remotely.
+
+AIM
+---
+Understand remote method invocation between a client and server process.
+
+WHERE TO DO THIS
+----------------
+Run both programs in Ubuntu. They can run on one VM for a basic demo. For two VMs, set PYRO_HOST to the server's reachable private IP and allow TCP port 50000 in the VM firewall.
+
+SETUP
+-----
+cd ~/cloud-lab/Exercise-02-RMI
+python3 -m venv .venv
+source .venv/bin/activate
+python -m pip install --upgrade pip
+python -m pip install Pyro4
+
+RUN
+---
+Terminal 1:
+source .venv/bin/activate
+python server.py
+
+Copy the complete URI printed by the server.
+
+Terminal 2:
+source .venv/bin/activate
+python client.py
+Paste the URI, then enter two integers.
+
+EXPECTED RESULT
+---------------
+For inputs 8 and 5:
+Addition result: 13
+Multiplication result: 40
+
+TROUBLESHOOTING
+---------------
+- Run both programs with the same Pyro4 environment.
+- Paste the full URI exactly as printed.
+- For separate VMs, a URI containing 127.0.0.1 will not work from the client; configure the daemon host to the server's reachable IP.
+- This direct-URI example does not require a Pyro nameserver.
