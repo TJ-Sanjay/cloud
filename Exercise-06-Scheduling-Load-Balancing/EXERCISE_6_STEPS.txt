@@ -1,0 +1,219 @@
+UIT2702 — EXERCISE 6
+TASK SCHEDULING AND LOAD BALANCING IN A CLOUD ENVIRONMENT
+=========================================================
+
+AIM
+---
+Use cron to run tasks automatically and configure HAProxy to distribute incoming HTTP requests across multiple Ubuntu VMs. The optional final section demonstrates task priority with nice.
+
+PART 1 — TASK SCHEDULING WITH CRON
+----------------------------------
+
+STEP 1: Start the Ubuntu VM(s) in VMware Workstation Pro 17.
+
+STEP 2: Update package lists.
+Run:
+    sudo apt update
+
+STEP 3: Install cron and check its service.
+Run:
+    sudo apt install cron -y
+    sudo systemctl enable --now cron
+    sudo systemctl status cron
+
+STEP 4: Create a working folder.
+Run:
+    mkdir -p ~/cloud-exercise-6
+    cd ~/cloud-exercise-6
+
+STEP 5: Create the task script.
+Run:
+    nano script.sh
+
+CREATE FILE: script.sh
+----------------------
+    #!/usr/bin/env bash
+    echo "$(date '+%Y-%m-%d %H:%M:%S') Hello Selcia — scheduled task ran on $(hostname)"
+
+Save with Ctrl+O, Enter, Ctrl+X.
+
+STEP 6: Make the script executable and test it.
+Run:
+    chmod +x ~/cloud-exercise-6/script.sh
+    ~/cloud-exercise-6/script.sh
+
+STEP 7: Create a log folder.
+Run:
+    mkdir -p ~/cloud-exercise-6/logs
+
+STEP 8: Open your user's cron table.
+Run:
+    crontab -e
+
+STEP 9: Add a task that runs every minute.
+Add this one line at the end of the crontab. IMPORTANT: replace USER with your actual Ubuntu username; use the real absolute path to your home directory.
+    */1 * * * * /home/USER/cloud-exercise-6/script.sh >> /home/USER/cloud-exercise-6/logs/output.log 2>&1
+
+Save and exit the editor. If your home directory is not /home/USER, check it with:
+    echo "$HOME"
+Use the exact path shown by that command in the cron entry.
+
+STEP 10: Verify that the scheduled task runs.
+Wait two minutes, then run:
+    tail -n 10 ~/cloud-exercise-6/logs/output.log
+
+On Ubuntu systems that log cron to syslog, you can also run:
+    sudo grep CRON /var/log/syslog | tail -n 20
+
+STEP 11: Remove the recurring test task after testing.
+Run:
+    crontab -e
+
+Delete the line added in Step 9 and save. This prevents the lab script from running forever.
+
+PART 2 — LOAD BALANCING WITH HAProxy
+------------------------------------
+
+STEP 12: Prepare at least two backend Ubuntu VMs.
+For each backend VM, run:
+    sudo apt update
+    sudo apt install apache2 -y
+    sudo systemctl enable --now apache2
+    hostname -I
+
+Record the private IP address of each backend. Confirm each can be reached from the load-balancer VM.
+
+STEP 13: Make each backend's web page different.
+On backend VM1, run:
+    echo '<h1>Response from VM1</h1>' | sudo tee /var/www/html/index.html
+
+On backend VM2, run:
+    echo '<h1>Response from VM2</h1>' | sudo tee /var/www/html/index.html
+
+If you have a third backend, run there:
+    echo '<h1>Response from VM3</h1>' | sudo tee /var/www/html/index.html
+
+STEP 14: Test each backend directly from the load-balancer VM.
+Run:
+    curl http://BACKEND_VM1_IP
+    curl http://BACKEND_VM2_IP
+
+Replace the IP placeholders with actual backend addresses.
+
+STEP 15: Install HAProxy on the load-balancer VM.
+Run:
+    sudo apt update
+    sudo apt install haproxy -y
+
+STEP 16: Back up the original configuration.
+Run:
+    sudo cp /etc/haproxy/haproxy.cfg /etc/haproxy/haproxy.cfg.backup
+
+STEP 17: Open the configuration file.
+Run:
+    sudo nano /etc/haproxy/haproxy.cfg
+
+Replace its contents with the following configuration. CHANGE the backend IP addresses to your actual private IPs.
+
+CREATE/EDIT FILE: /etc/haproxy/haproxy.cfg
+------------------------------------------
+    global
+        log /dev/log local0
+        maxconn 2048
+
+    defaults
+        log global
+        mode http
+        option httplog
+        timeout connect 5s
+        timeout client 30s
+        timeout server 30s
+
+    frontend http_front
+        bind *:80
+        default_backend http_back
+
+    backend http_back
+        balance roundrobin
+        option httpchk GET /
+        server vm1 BACKEND_VM1_IP:80 check
+        server vm2 BACKEND_VM2_IP:80 check
+        server vm3 BACKEND_VM3_IP:80 check
+
+Replace BACKEND_VM1_IP, BACKEND_VM2_IP and BACKEND_VM3_IP with real addresses. If you have only two backend VMs, remove the vm3 line.
+
+STEP 18: Validate the HAProxy configuration.
+Run:
+    sudo haproxy -c -f /etc/haproxy/haproxy.cfg
+
+STEP 19: Restart, enable, and check HAProxy.
+Run:
+    sudo systemctl restart haproxy
+    sudo systemctl enable haproxy
+    sudo systemctl status haproxy
+
+STEP 20: Test load balancing.
+Find the load-balancer VM's IP:
+    hostname -I
+
+From a machine that can reach the load balancer, run:
+    curl http://LOAD_BALANCER_IP
+
+Repeat several requests:
+    for i in $(seq 1 9); do curl -s http://LOAD_BALANCER_IP/; done
+
+Replace LOAD_BALANCER_IP with the actual load-balancer IP. Responses should show requests being distributed among healthy backends. If a request fails, inspect:
+    sudo journalctl -u haproxy --no-pager -n 50
+
+PART 3 — OPTIONAL ADVANCED SCHEDULING WITH PRIORITIES
+-----------------------------------------------------
+
+STEP 21: Create a lightweight system-information task.
+Run:
+    nano script1.sh
+
+CREATE FILE: script1.sh
+-----------------------
+    #!/usr/bin/env bash
+    echo "$(date '+%F %T') LOW-PRIORITY job on $(hostname)"
+    uptime
+    free -h
+
+STEP 22: Create a second task.
+Run:
+    nano script2.sh
+
+CREATE FILE: script2.sh
+-----------------------
+    #!/usr/bin/env bash
+    echo "$(date '+%F %T') NORMAL-PRIORITY job on $(hostname)"
+    df -h /
+
+STEP 23: Make both files executable.
+Run:
+    chmod +x script1.sh script2.sh
+
+STEP 24: Add the jobs to cron with different nice values.
+Run:
+    crontab -e
+
+Add these lines, adjusting the paths to your real home directory:
+    */5 * * * * /usr/bin/nice -n 10 /home/USER/cloud-exercise-6/script1.sh >> /home/USER/cloud-exercise-6/logs/script1.log 2>&1
+    */5 * * * * /usr/bin/nice -n 0 /home/USER/cloud-exercise-6/script2.sh >> /home/USER/cloud-exercise-6/logs/script2.log 2>&1
+
+A larger nice value means lower CPU scheduling priority. These examples illustrate OS process priority; cron itself does not provide dependency-aware distributed scheduling.
+
+STEP 25: Check logs.
+Run:
+    tail -n 20 ~/cloud-exercise-6/logs/script1.log
+    tail -n 20 ~/cloud-exercise-6/logs/script2.log
+
+Remove optional cron entries when finished.
+
+RESULT / EVIDENCE
+-----------------
+Capture the cron entry, output log showing multiple timestamps, Apache responses from each backend, successful HAProxy configuration validation, HAProxy service status, and several requests through the load balancer.
+
+IMPORTANT
+---------
+Replace placeholder IP addresses and USER with real values. Keep the services on your private lab network. Remove recurring cron jobs after the exercise.
