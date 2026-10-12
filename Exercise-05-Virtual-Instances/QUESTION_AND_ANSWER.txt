@@ -1,0 +1,75 @@
+EXERCISE 5 — VIRTUAL INSTANCES, SERVER CONSOLIDATION AND FAULT TOLERANCE
+=========================================================================
+
+QUESTION
+--------
+Create and configure multiple virtual instances in VMware Workstation, run web services on them, configure load balancing, consolidate services onto fewer VMs, and implement fault tolerance using redundant VMs, synchronization and snapshots.
+
+AIM
+---
+Explore VM management, load balancing, server consolidation, and recovery/high availability.
+
+WHERE TO DO THIS
+----------------
+VMware Workstation Pro on the host computer plus Ubuntu VMs. The GUI steps happen in VMware; the shell commands run inside the relevant Ubuntu VM.
+
+PART 1 — CREATE VIRTUAL INSTANCES
+--------------------------------
+1. Power off the original Ubuntu VM and create a full clone using VM > Manage > Clone.
+2. Create at least two backend VMs and one load-balancer VM if resources permit.
+3. Start the VMs and ensure they use the same host-only or NAT network. For lab-only tests, host-only is easiest; bridged networking is only needed when other LAN devices must access them.
+4. On each backend VM, find its IP using: hostname -I
+5. Install Python 3 if needed: sudo apt update && sudo apt install -y python3
+
+PART 2 — RUN A WEB SERVICE ON EACH BACKEND
+------------------------------------------
+Copy backend_server.py to each backend VM.
+Run: python3 backend_server.py
+The service listens on port 8080 and returns the backend hostname. Check locally with: curl http://127.0.0.1:8080
+For a remote test, use curl http://BACKEND_PRIVATE_IP:8080
+
+PART 3 — LOAD BALANCING
+-----------------------
+1. On the load-balancer VM, install HAProxy:
+   sudo apt update
+   sudo apt install -y haproxy
+2. Copy haproxy.cfg to /etc/haproxy/haproxy.cfg after backing up the existing file.
+3. Edit the backend server IPs in the config to match your VM addresses.
+4. Validate config: sudo haproxy -c -f /etc/haproxy/haproxy.cfg
+5. Restart: sudo systemctl restart haproxy
+6. Test repeatedly from the load-balancer VM or another allowed VM:
+   curl http://LOAD_BALANCER_PRIVATE_IP/
+The returned hostname should vary across backend servers according to round-robin scheduling.
+
+PART 4 — SERVER CONSOLIDATION
+-----------------------------
+1. Record CPU/memory usage on each VM with top or free -h.
+2. Decide which low-load services can safely share one VM.
+3. Copy the service files/configuration to the target VM and test each service.
+4. Confirm the consolidated services are healthy before shutting down any source VM.
+5. Compare resource usage before and after consolidation. Do not delete the original VMs until the migrated services have been verified.
+
+PART 5 — FAULT TOLERANCE
+------------------------
+1. In VMware, select a VM and choose VM > Snapshot > Take Snapshot before major changes.
+2. Create a full clone of a critical VM as a backup.
+3. For file synchronization, install rsync: sudo apt install -y rsync
+4. Example (replace paths, username and IP):
+   rsync -av ~/service/ username@BACKUP_VM_IP:~/service/
+5. Stop one backend VM and verify HAProxy marks it unavailable and continues serving from the healthy backend. Restart it and verify recovery.
+
+FILES
+-----
+- backend_server.py: small hostname-reporting HTTP backend.
+- haproxy.cfg: round-robin load balancer example.
+
+EVIDENCE TO CAPTURE
+-------------------
+VM list/clone settings, each backend IP, curl output from each backend, HAProxy validation/status, repeated load-balanced responses, resource usage before/after consolidation, and snapshot/backup evidence.
+
+TROUBLESHOOTING
+---------------
+- Backend unreachable: verify VM network mode, IP address, and port 8080 firewall rules.
+- HAProxy fails to start: run the config validation command and check logs with journalctl -u haproxy.
+- A single backend always appears: ensure both servers are marked enabled and test several requests.
+- Cloning may duplicate host identity. If using clones as real independent hosts, ensure unique hostnames and network identity.
