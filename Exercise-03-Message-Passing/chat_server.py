@@ -10,8 +10,6 @@ def broadcast(message, sender):
     with clients_lock:
         targets = list(clients)
     for target in targets:
-        if target is sender:
-            continue
         try:
             target.sendall(message)
         except OSError:
