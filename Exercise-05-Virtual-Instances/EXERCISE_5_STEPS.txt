@@ -1,0 +1,236 @@
+UIT2702 — EXERCISE 5
+VIRTUAL INSTANCES, SERVER CONSOLIDATION AND FAULT TOLERANCE
+===========================================================
+
+AIM
+---
+Create multiple Ubuntu VMs, configure Apache on each, use HAProxy to distribute requests, consolidate services, and prepare backup/recovery using VM clones, rsync, and snapshots.
+
+PART 1 — CREATE AND CONFIGURE VIRTUAL INSTANCES
+------------------------------------------------
+
+STEP 1: Open VMware Workstation Pro 17.
+Open your existing Ubuntu 24.04.1 LTS VM.
+
+STEP 2: Create full clones.
+In VMware Workstation:
+1. Right-click the Ubuntu VM.
+2. Select Manage > Clone.
+3. Select Create a full clone.
+4. Create at least two clones (three backend VMs in total is ideal).
+5. Give the VMs clear names, such as Ubuntu-VM1, Ubuntu-VM2, and Ubuntu-VM3.
+
+STEP 3: Start all VMs.
+Power on each VM and open a terminal.
+
+STEP 4: Check the IP address on EACH VM.
+Run:
+    hostname
+    hostname -I
+
+Write down the private IP address for each VM. The VMs must be able to communicate over the same VMware network. If you cloned the VM, ensure each clone has a unique hostname and IP address.
+
+STEP 5: Update Ubuntu on EACH backend VM.
+Run:
+    sudo apt update
+
+STEP 6: Install Apache on EACH backend VM.
+Run:
+    sudo apt install apache2 -y
+
+STEP 7: Enable and start Apache on EACH backend VM.
+Run:
+    sudo systemctl enable --now apache2
+    sudo systemctl status apache2
+
+STEP 8: Create a different web page on EACH backend VM.
+On VM1, run:
+    sudo nano /var/www/html/index.html
+
+Create the file /var/www/html/index.html with this content on VM1:
+    <h1>Hello from VM1</h1>
+
+Save in nano with Ctrl+O, Enter, then Ctrl+X.
+
+On VM2, run:
+    sudo nano /var/www/html/index.html
+
+Create the file /var/www/html/index.html with this content on VM2:
+    <h1>Hello from VM2</h1>
+
+On VM3, run:
+    sudo nano /var/www/html/index.html
+
+Create the file /var/www/html/index.html with this content on VM3:
+    <h1>Hello from VM3</h1>
+
+STEP 9: Test Apache on EACH VM.
+Run:
+    curl http://127.0.0.1
+
+You should see the unique HTML content for that VM. Also test from another VM using:
+    curl http://BACKEND_PRIVATE_IP
+
+Replace BACKEND_PRIVATE_IP with the actual IP address of the backend VM.
+
+PART 2 — CONFIGURE HAProxy LOAD BALANCING
+-----------------------------------------
+
+STEP 10: Choose a load-balancer VM.
+Use a separate Ubuntu VM if possible. You may use one of the existing VMs for the lab if you do not have enough resources.
+
+STEP 11: Update packages on the load-balancer VM.
+Run:
+    sudo apt update
+
+STEP 12: Install HAProxy.
+Run:
+    sudo apt install haproxy -y
+
+STEP 13: Back up the original HAProxy configuration.
+Run:
+    sudo cp /etc/haproxy/haproxy.cfg /etc/haproxy/haproxy.cfg.backup
+
+STEP 14: Open the HAProxy configuration file.
+Run:
+    sudo nano /etc/haproxy/haproxy.cfg
+
+Replace its contents with the following configuration. CHANGE the IP addresses to the actual IP addresses of your Apache backend VMs.
+
+CREATE/EDIT FILE: /etc/haproxy/haproxy.cfg
+------------------------------------------
+    global
+        log /dev/log local0
+        maxconn 2048
+
+    defaults
+        log global
+        mode http
+        option httplog
+        timeout connect 5s
+        timeout client 30s
+        timeout server 30s
+
+    frontend http_front
+        bind *:80
+        default_backend http_back
+
+    backend http_back
+        balance roundrobin
+        option httpchk GET /
+        server vm1 BACKEND_VM1_IP:80 check
+        server vm2 BACKEND_VM2_IP:80 check
+        server vm3 BACKEND_VM3_IP:80 check
+
+Replace BACKEND_VM1_IP, BACKEND_VM2_IP, and BACKEND_VM3_IP with actual IP addresses, without angle brackets. If you only have two backends, remove the vm3 line.
+
+STEP 15: Validate the HAProxy configuration.
+Run:
+    sudo haproxy -c -f /etc/haproxy/haproxy.cfg
+
+Continue only if it reports that the configuration is valid.
+
+STEP 16: Restart and enable HAProxy.
+Run:
+    sudo systemctl restart haproxy
+    sudo systemctl enable haproxy
+    sudo systemctl status haproxy
+
+STEP 17: Test the load balancer.
+Find the load-balancer VM IP using:
+    hostname -I
+
+From a terminal that can reach it, run:
+    curl http://LOAD_BALANCER_IP
+
+Repeat several times:
+    for i in $(seq 1 9); do curl -s http://LOAD_BALANCER_IP/; done
+
+Replace LOAD_BALANCER_IP with the actual IP. The returned VM page should rotate among the enabled backends when requests are distributed by round-robin. If it does not, check the backend IPs and HAProxy logs:
+    sudo journalctl -u haproxy --no-pager -n 50
+
+PART 3 — SERVER CONSOLIDATION
+-----------------------------
+
+STEP 18: Review VM resources.
+In VMware Workstation, open each VM's settings and note CPU, RAM, and disk allocation. Inside each Ubuntu VM, run:
+    free -h
+    top
+
+STEP 19: Choose the consolidation host.
+Select a VM with enough CPU, memory, and disk for the services that will be moved. Do not consolidate everything onto a VM that is already overloaded.
+
+STEP 20: Copy a service to the target VM.
+For example, to copy a project directory to a target VM:
+    scp -r ~/my-service USERNAME@TARGET_VM_IP:~/
+
+Replace the directory, username, and target IP with your real values. For the Apache page in this exercise, recreate or copy the relevant files to the target VM and install/start the required service there.
+
+STEP 21: Verify the service on the target VM.
+Run the relevant service status command, such as:
+    sudo systemctl status apache2
+    curl http://127.0.0.1
+
+Do NOT shut down the source VM until the migrated service has been tested and verified.
+
+STEP 22: Compare resource usage.
+Run:
+    free -h
+    top
+
+Record the before-and-after CPU and memory usage. Only after verifying the migrated services should you power off the old VMs. Do not delete a VM until you are certain its data is no longer needed.
+
+PART 4 — FAULT TOLERANCE
+------------------------
+
+STEP 23: Create a backup clone.
+In VMware Workstation, select the critical VM and choose VM > Manage > Clone > Create a full clone. Give the backup a clear name.
+
+STEP 24: Install rsync on the primary and backup Ubuntu VMs.
+Run on both:
+    sudo apt update
+    sudo apt install rsync -y
+
+STEP 25: Prepare a destination directory on the backup VM.
+Run on the backup VM:
+    mkdir -p ~/service-backup
+
+STEP 26: Synchronize a directory from primary to backup.
+Run on the primary VM, replacing USERNAME and BACKUP_VM_IP:
+    rsync -av ~/my-service/ USERNAME@BACKUP_VM_IP:~/service-backup/
+
+This requires SSH access and a destination path writable by that user. If you use another source directory, change ~/my-service/ accordingly.
+
+STEP 27: Take a VMware snapshot.
+In VMware Workstation:
+1. Select the critical VM.
+2. Choose VM > Snapshot > Take Snapshot.
+3. Name it Pre-Consolidation.
+Take snapshots before major changes so you can revert the VM if necessary.
+
+STEP 28: Test basic backend failure.
+If you have at least two backend VMs behind HAProxy, stop Apache on one backend:
+    sudo systemctl stop apache2
+
+Send several requests to the load balancer:
+    for i in $(seq 1 6); do curl -s http://LOAD_BALANCER_IP/; done
+
+HAProxy should stop sending requests to the failed backend after its health check detects the failure. Start Apache again:
+    sudo systemctl start apache2
+
+RESULT / EVIDENCE
+-----------------
+Capture:
+1. VMware window showing the cloned VMs.
+2. IP addresses and Apache status on each backend.
+3. Unique page output from each backend.
+4. HAProxy configuration validation and service status.
+5. Repeated load-balancer requests.
+6. CPU/memory usage before and after consolidation.
+7. rsync output, backup clone, and snapshot evidence.
+
+IMPORTANT
+---------
+- Replace all example IPs/usernames with your own.
+- Keep test VMs and ports on a trusted private lab network.
+- A VM clone, rsync copy, and snapshot are recovery aids; they do not automatically provide full production high availability.
