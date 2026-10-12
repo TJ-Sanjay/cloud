@@ -1,0 +1,29 @@
+EXERCISE 4 — LOGICAL CLOCKS AND VECTOR CLOCKS
+=============================================
+
+QUESTION
+--------
+Task 1: Implement Lamport logical clocks. Each process increments its clock for events and sends timestamps with messages. On receiving a message, update the local clock to max(local clock, received timestamp) + 1.
+Task 2: Implement vector clocks. Each process maintains a vector, increments its own component for events/sends, and merges received vectors to capture causality.
+
+AIM
+---
+Understand event ordering and causality in distributed systems.
+
+WHERE TO DO THIS
+----------------
+Ubuntu terminal with Python 3. These are local simulations of distributed processes and do not require extra packages.
+
+RUN
+---
+python3 lamport_clock.py
+python3 vector_clock.py
+
+EXPECTED RESULT
+---------------
+Lamport output shows monotonically increasing logical timestamps and receiver updates.
+Vector output shows vectors being incremented and merged; for example, an event at process 0 changes [0, 0, 0] to [1, 0, 0].
+
+IMPORTANT IMPLEMENTATION DETAIL
+-------------------------------
+On vector-clock receive, first take the element-wise maximum of local and received vectors, then increment the receiving process's own component once. Do not increment every component during the merge.
