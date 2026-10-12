@@ -11,11 +11,10 @@ Understand remote method invocation between a client and server process.
 
 WHERE TO DO THIS
 ----------------
-Run both programs in Ubuntu. They can run on one VM for a basic demo. For two VMs, configure PYRO_HOST to the server's reachable private IP and allow TCP port 50000 in the VM firewall.
+Clone this repository on Ubuntu and enter cloud/Exercise-02-RMI. Run both programs in Ubuntu. They can run on one VM for a basic demo. For two VMs, configure PYRO_HOST to the server's reachable private IP and allow TCP port 50000 in the VM firewall.
 
 SETUP
 -----
-cd ~/cloud-lab/Exercise-02-RMI
 python3 -m venv .venv
 source .venv/bin/activate
 python -m pip install --upgrade pip
