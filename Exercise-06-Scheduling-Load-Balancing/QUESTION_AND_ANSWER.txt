@@ -13,23 +13,25 @@ Automate recurring jobs and distribute web requests among multiple backend VMs.
 
 WHERE TO DO THIS
 ----------------
-Run the scheduling commands inside an Ubuntu VM. Run the backend service on two Ubuntu VMs and HAProxy on a separate VM (or combine roles if the host has limited resources).
+Clone the cloud repository on an Ubuntu VM and work in the Exercise-06-Scheduling-Load-Balancing folder. Run scheduling commands inside an Ubuntu VM. Run the backend service on two Ubuntu VMs and HAProxy on a separate VM (or combine roles if host resources are limited).
 
 PART 1 — CRON TASK SCHEDULING
 -----------------------------
-1. Copy scheduled_task.sh into ~/cloud-lab/Exercise-06-Scheduling-Load-Balancing.
-2. Run:
+1. Make the script executable:
    chmod +x scheduled_task.sh
+2. Run it manually:
    ./scheduled_task.sh
-3. Create an absolute path for the log:
+3. Create a log directory:
    mkdir -p "$HOME/cloud-lab-logs"
-4. Open your personal cron table:
+4. Find your home directory:
+   echo "$HOME"
+5. Open your personal cron table:
    crontab -e
-5. Add this line, replacing USER with your Ubuntu username:
-   */1 * * * * /home/USER/cloud-lab/Exercise-06-Scheduling-Load-Balancing/scheduled_task.sh >> /home/USER/cloud-lab-logs/scheduled_task.log 2>&1
-6. Wait two minutes and inspect:
+6. Add this line, replacing USER with your Ubuntu username and ensuring the repository is at /home/USER/cloud:
+   */1 * * * * /home/USER/cloud/Exercise-06-Scheduling-Load-Balancing/scheduled_task.sh >> /home/USER/cloud-lab-logs/scheduled_task.log 2>&1
+7. Wait two minutes and inspect:
    tail -n 10 ~/cloud-lab-logs/scheduled_task.log
-7. Remove the cron entry after testing by running crontab -e and deleting that line.
+8. Remove the cron entry after testing by running crontab -e and deleting that line.
 
 PART 2 — LOAD BALANCING
 -----------------------
