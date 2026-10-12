@@ -1,0 +1,59 @@
+EXERCISE 7 — HYPERVISOR CLUSTERING IN A CLOUD ENVIRONMENT
+==========================================================
+
+QUESTION
+--------
+Implement hypervisor clustering in a cloud environment. Set up two or more hypervisor hosts, configure network communication, join the hosts into a cluster, and validate that the cluster can manage virtual machines and support high availability.
+
+AIM
+---
+Understand clustered virtualization hosts and centralized cluster management.
+
+IMPORTANT VM RESOURCE NOTE
+--------------------------
+This exercise is infrastructure-focused and cannot be completed by a Python script alone. VMware Workstation must support nested virtualization, and the host needs enough CPU/RAM/disk for multiple nested hypervisors. A practical lab option is Proxmox VE nested in VMware Workstation, if your machine supports it. Do not assume that ordinary Ubuntu VMs alone constitute a hypervisor cluster.
+
+WHERE TO DO THIS
+----------------
+1. On the physical host, use VMware Workstation to create two separate VMs for hypervisor hosts.
+2. Install the same supported hypervisor version on both (for example, Proxmox VE).
+3. Enable virtualization extensions/nested virtualization for each VM in VMware settings where supported.
+4. Give each host a unique hostname and a static IP on the same private network. Ensure both hosts can resolve each other's hostnames.
+5. Make sure clocks are synchronized and required cluster ports are allowed only on the private lab network.
+
+PART 1 — PREPARE HOSTS
+----------------------
+On each hypervisor VM, verify hostname, IP, connectivity, and time synchronization. Use:
+hostname
+ip addr
+ping PEER_PRIVATE_IP
+date
+
+PART 2 — CREATE THE CLUSTER
+---------------------------
+Use the hypervisor's documented cluster management interface/commands for the installed version. For Proxmox VE, create the cluster on the first node in the web UI or with the supported pvecm cluster command, then join the second node using the join information shown by the first node.
+
+Do not copy/paste a join command from an unrelated version or machine. Follow the cluster UI's exact instructions and verify that node names and addresses are correct before joining.
+
+PART 3 — VALIDATE
+-----------------
+1. Confirm both nodes appear as online in the cluster management UI.
+2. Create a small test VM and verify its configuration is visible from the cluster manager.
+3. If shared storage is available, test migration according to your hypervisor's supported requirements.
+4. For high availability, configure HA only after cluster quorum, storage, and fencing requirements are understood and met.
+5. Record node status and a screenshot of the cluster dashboard.
+
+TWO-NODE QUORUM WARNING
+-----------------------
+Many cluster managers require quorum. A two-node cluster may lose quorum if either node fails; a supported quorum device or a third vote may be required. Do not claim high availability merely because two hosts joined a cluster.
+
+RESULT/EVIDENCE
+---------------
+Include screenshots of both hypervisor VMs, their IP/connectivity checks, cluster node status, test VM visibility, and any migration/HA test that your lab resources actually support.
+
+TROUBLESHOOTING
+---------------
+- Nested virtualization unavailable: check CPU virtualization is enabled in BIOS/UEFI and VMware nested virtualization settings.
+- Nodes cannot join: verify unique hostnames, static IPs, DNS/hosts entries, time sync, and private-network connectivity.
+- Cluster reports no quorum: inspect the hypervisor's quorum status; do not force quorum without understanding the data-loss risk.
+- High resource use: shut down nested hypervisors when the lab is complete.
