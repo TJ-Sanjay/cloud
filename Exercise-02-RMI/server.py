@@ -1,7 +1,9 @@
 import os
 import Pyro4
 
-SERVER_HOST = os.environ.get("PYRO_HOST", "0.0.0.0")
+# Same-machine demo uses 127.0.0.1. For two VMs, start with
+# PYRO_HOST=<server-private-IP> python server.py on the server VM.
+SERVER_HOST = os.environ.get("PYRO_HOST", "127.0.0.1")
 SERVER_PORT = 50000
 
 @Pyro4.expose
@@ -17,7 +19,6 @@ def main():
     uri = daemon.register(Calculator())
     print("Calculator service is ready.")
     print("URI:", uri)
-    print("For a remote client, use a URI with the server's reachable IP.")
     daemon.requestLoop()
 
 if __name__ == "__main__":
