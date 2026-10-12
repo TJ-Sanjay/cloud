@@ -16,7 +16,7 @@ Exercises 1, 2, and 4 use the code from the supplied `demo.zip`. Exercise 3 rema
    - `server2.py` + `client2.py`: send a pickled `DataObject` and return the sum of its values.
    - Both examples use port `12345`; run only one server example at a time.
 2. [Exercise 2 — Remote Method Invocation (Pyro4)](Exercise-02-RMI/)
-   - Run `server.py), copy the printed URI, then enter it in `client.py`.
+   - Run `server.py`, copy the printed URI, then enter it in `client.py`.
    - Install Pyro4 first: `python -m pip install Pyro4`.
 3. [Exercise 3 — Message Passing and Distributed Mutual Exclusion](Exercise-03-Message-Passing/)
    - Multi-client chat, Ricart–Agrawala simulation, Token Ring, and Centralized Coordinator.
