@@ -43,6 +43,7 @@ for pid in sorted(PROCESS_IDS, key=lambda item: priority[item]):
     owner = None
     for waiting_pid in deferred[pid]:
         print(f"P{pid} -> P{waiting_pid}: deferred REPLY")
+        replies[waiting_pid].add(pid)
     deferred[pid].clear()
 
 print("\nSimulation completed; no overlapping critical-section entries occurred.")
