@@ -2,6 +2,12 @@
 
 This repository contains solutions and step-by-step run instructions for all seven exercises in the Cloud and Distributed Computing lab manual.
 
+## Get the repository
+
+Run these commands on your computer/Ubuntu VM:
+git clone https://github.com/TJ-Sanjay/cloud.git
+cd cloud
+
 ## Folder map
 
 1. [Exercise 01 — Inter-Process Communication](Exercise-01-IPC/QUESTION_AND_ANSWER.txt)
