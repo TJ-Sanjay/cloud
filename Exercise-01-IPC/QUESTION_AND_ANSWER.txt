@@ -13,20 +13,17 @@ Understand TCP socket communication and Python object serialization.
 
 WHERE TO DO THIS
 ----------------
-Use an Ubuntu terminal. Create/run both programs on the same VM first (localhost). For a two-VM demonstration, change HOST on the clients to the server VM's private IP and make sure the VM network/firewall allows TCP port 12345 (Task 1) and 12346 (Task 2).
-
-SETUP
------
-python3 --version
-mkdir -p ~/cloud-lab/Exercise-01-IPC
-cd ~/cloud-lab/Exercise-01-IPC
+Clone this repository on the Ubuntu VM and run:
+git clone https://github.com/TJ-Sanjay/cloud.git
+cd cloud/Exercise-01-IPC
+If you already cloned it, just cd into the existing Exercise-01-IPC folder. Both programs can run in two terminal windows on the same VM. For a two-VM demo, change HOST in the clients to the server VM's private IP and allow TCP ports 12345 and 12346 in the private lab network.
 
 TASK 1 — BASIC NUMBER-SUM SERVER
 -------------------------------
-Terminal 1:
+Terminal 1 (from this folder):
 python3 server_numbers.py
 
-Terminal 2:
+Terminal 2 (from this folder):
 python3 client_numbers.py
 Enter numbers separated by spaces, for example: 10 20 30
 Expected client output: Server response: 60
