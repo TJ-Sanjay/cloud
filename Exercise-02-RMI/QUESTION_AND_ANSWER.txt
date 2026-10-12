@@ -11,7 +11,7 @@ Understand remote method invocation between a client and server process.
 
 WHERE TO DO THIS
 ----------------
-Run both programs in Ubuntu. They can run on one VM for a basic demo. For two VMs, set PYRO_HOST to the server's reachable private IP and allow TCP port 50000 in the VM firewall.
+Run both programs in Ubuntu. They can run on one VM for a basic demo. For two VMs, configure PYRO_HOST to the server's reachable private IP and allow TCP port 50000 in the VM firewall.
 
 SETUP
 -----
@@ -23,16 +23,20 @@ python -m pip install Pyro4
 
 RUN
 ---
-Terminal 1:
+Same VM: in Terminal 1, run:
 source .venv/bin/activate
 python server.py
 
 Copy the complete URI printed by the server.
 
-Terminal 2:
+In Terminal 2:
 source .venv/bin/activate
 python client.py
 Paste the URI, then enter two integers.
+
+For separate VMs, run this on the server VM, replacing the IP with its actual private IP:
+PYRO_HOST=192.168.56.101 python server.py
+Then enter the URI printed by that command on the client VM.
 
 EXPECTED RESULT
 ---------------
@@ -44,5 +48,5 @@ TROUBLESHOOTING
 ---------------
 - Run both programs with the same Pyro4 environment.
 - Paste the full URI exactly as printed.
-- For separate VMs, a URI containing 127.0.0.1 will not work from the client; configure the daemon host to the server's reachable IP.
+- For separate VMs, the URI must contain the server's reachable private IP, not 127.0.0.1.
 - This direct-URI example does not require a Pyro nameserver.
